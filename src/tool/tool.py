@@ -14,9 +14,9 @@ class ChatClient:
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
 
-    def get_response(self, messages):
+    def get_response(self, messages,temperature=0):
         # 模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models
-        completion = self.client.chat.completions.create(model="qwen-plus-character", messages=messages)
+        completion = self.client.chat.completions.create(model="qwen-plus-character", messages=messages,temperature=temperature)
         return completion
 
     def get_moderation(self, message):

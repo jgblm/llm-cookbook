@@ -19,6 +19,11 @@ class ChatClient:
         completion = self.client.chat.completions.create(model="qwen-plus-character", messages=messages,temperature=temperature)
         return completion
 
+    def get_final_content(self, messages):
+        response = self.get_response(messages)
+        content = response.choices[0].message.content
+        return content
+
     def get_moderation(self, message):
         response = self.client.moderations.create(model="qwen-plus-character",input=message)
         return response

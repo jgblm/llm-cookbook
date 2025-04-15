@@ -1,8 +1,11 @@
 import json
 
+from dotenv import find_dotenv
+
 from src.tool.tool import ChatClient
 
-def get_product_by_name(name):
+
+def get_product_by_name(products, name):
     """
     根据产品名称获取产品
 
@@ -11,7 +14,8 @@ def get_product_by_name(name):
     """
     return products.get(name, None)
 
-def get_products_by_category(category):
+
+def get_products_by_category(products, category):
     """
     根据类别获取产品
 
@@ -19,6 +23,7 @@ def get_products_by_category(category):
     category: 产品类别
     """
     return [product for product in products.values() if product["类别"] == category]
+
 
 def read_string_to_list(input_string):
     """
@@ -42,7 +47,8 @@ def read_string_to_list(input_string):
         print("Error: Invalid JSON string")
         return None
 
-def generate_output_string(data_list):
+
+def generate_output_string(products, data_list):
     """
     根据输入的数据列表生成包含产品或类别信息的字符串。
 
@@ -61,14 +67,14 @@ def generate_output_string(data_list):
             if "products" in data and data["products"]:
                 products_list = data["products"]
                 for product_name in products_list:
-                    product = get_product_by_name(product_name)
+                    product = get_product_by_name(products, product_name)
                     if product:
                         output_string += json.dumps(product, indent=4, ensure_ascii=False) + "\n"
                     else:
                         print(f"Error: Product '{product_name}' not found")
             elif "category" in data:
                 category_name = data["category"]
-                category_products = get_products_by_category(category_name)
+                category_products = get_products_by_category(products, category_name)
                 for product in category_products:
                     output_string += json.dumps(product, indent=4, ensure_ascii=False) + "\n"
             else:
@@ -79,105 +85,106 @@ def generate_output_string(data_list):
     return output_string
 
 
-delimiter = "####"
+def process_message(user_message):
+    delimiter = "####"
+    system_message = f"""
+    您将获得客户服务查询。
+    客户服务查询将使用{delimiter}字符作为分隔符。
+    请仅输出一个可解析的Python列表，列表每一个元素是一个JSON对象，每个对象具有以下格式：
+    'category': <包括以下几个类别：Computers and Laptops、Smartphones and Accessories、Televisions and Home Theater Systems、Gaming Consoles and Accessories、Audio Equipment、Cameras and Camcorders>,
+    以及
+    'products': <必须是下面的允许产品列表中找到的产品列表>
+    
+    类别和产品必须在客户服务查询中找到。
+    如果提到了某个产品，它必须与允许产品列表中的正确类别关联。
+    如果未找到任何产品或类别，则输出一个空列表。
+    除了列表外，不要输出其他任何信息！
+    
+    允许的产品：
+    
+    Computers and Laptops category:
+    TechPro Ultrabook
+    BlueWave Gaming Laptop
+    PowerLite Convertible
+    TechPro Desktop
+    BlueWave Chromebook
+    
+    Smartphones and Accessories category:
+    SmartX ProPhone
+    MobiTech PowerCase
+    SmartX MiniPhone
+    MobiTech Wireless Charger
+    SmartX EarBuds
+    
+    Televisions and Home Theater Systems category:
+    CineView 4K TV
+    SoundMax Home Theater
+    CineView 8K TV
+    SoundMax Soundbar
+    CineView OLED TV
+    
+    Gaming Consoles and Accessories category:
+    GameSphere X
+    ProGamer Controller
+    GameSphere Y
+    ProGamer Racing Wheel
+    GameSphere VR Headset
+    
+    Audio Equipment category:
+    AudioPhonic Noise-Canceling Headphones
+    WaveSound Bluetooth Speaker
+    AudioPhonic True Wireless Earbuds
+    WaveSound Soundbar
+    AudioPhonic Turntable
+    
+    Cameras and Camcorders category:
+    FotoSnap DSLR Camera
+    ActionCam 4K
+    FotoSnap Mirrorless Camera
+    ZoomMaster Camcorder
+    FotoSnap Instant Camera
+    
+    只输出对象列表，不包含其他内容。
+    """
 
-system_message = f"""
-您将获得客户服务查询。
-客户服务查询将使用{delimiter}字符作为分隔符。
-请仅输出一个可解析的Python列表，列表每一个元素是一个JSON对象，每个对象具有以下格式：
-'category': <包括以下几个类别：Computers and Laptops、Smartphones and Accessories、Televisions and Home Theater Systems、Gaming Consoles and Accessories、Audio Equipment、Cameras and Camcorders>,
-以及
-'products': <必须是下面的允许产品列表中找到的产品列表>
+    messages = [{'role': 'system', 'content': system_message},
+                {'role': 'user', 'content': f"{delimiter}{user_message}{delimiter}"}]
 
-类别和产品必须在客户服务查询中找到。
-如果提到了某个产品，它必须与允许产品列表中的正确类别关联。
-如果未找到任何产品或类别，则输出一个空列表。
-除了列表外，不要输出其他任何信息！
+    # 1. 获取json结构的数据
+    client = ChatClient()
+    category_and_product_response_1 = client.get_final_content(messages)
+    print("获取json结构的相关产品")
 
-允许的产品：
+    # 2. load产品信息
+    product_path = find_dotenv(filename='product-zh.json')
+    with open(product_path, 'r') as f:
+        products = json.load(f)
 
-Computers and Laptops category:
-TechPro Ultrabook
-BlueWave Gaming Laptop
-PowerLite Convertible
-TechPro Desktop
-BlueWave Chromebook
+    # 3. 获取产品信息
+    category_and_product_list = read_string_to_list(category_and_product_response_1)
+    product_information_for_user_message_1 = generate_output_string(products, category_and_product_list)
+    print("获取产品信息：", product_information_for_user_message_1)
 
-Smartphones and Accessories category:
-SmartX ProPhone
-MobiTech PowerCase
-SmartX MiniPhone
-MobiTech Wireless Charger
-SmartX EarBuds
+    system_message = f"""
+    您是一家大型电子商店的客服助理。
+    请以友好和乐于助人的口吻回答问题，并尽量简洁明了。
+    请确保向用户提出相关的后续问题。
+    """
 
-Televisions and Home Theater Systems category:
-CineView 4K TV
-SoundMax Home Theater
-CineView 8K TV
-SoundMax Soundbar
-CineView OLED TV
+    messages = [{'role': 'system', 'content': system_message},
+                {'role': 'user', 'content': user_message},
+                {'role': 'assistant',
+                 'content': f"""相关产品信息:\n\
+                  {product_information_for_user_message_1}"""}]
 
-Gaming Consoles and Accessories category:
-GameSphere X
-ProGamer Controller
-GameSphere Y
-ProGamer Racing Wheel
-GameSphere VR Headset
+    return messages;
 
-Audio Equipment category:
-AudioPhonic Noise-Canceling Headphones
-WaveSound Bluetooth Speaker
-AudioPhonic True Wireless Earbuds
-WaveSound Soundbar
-AudioPhonic Turntable
 
-Cameras and Camcorders category:
-FotoSnap DSLR Camera
-ActionCam 4K
-FotoSnap Mirrorless Camera
-ZoomMaster Camcorder
-FotoSnap Instant Camera
-
-只输出对象列表，不包含其他内容。
-"""
-
-user_message_1 = f"""
- 请告诉我关于 smartx pro phone 和 the fotosnap camera 的信息。
- 另外，请告诉我关于你们的tvs的情况。 """
-
-messages = [{'role': 'system', 'content': system_message},
-            {'role': 'user', 'content': f"{delimiter}{user_message_1}{delimiter}"}]
-
-# 1. 获取json结构的数据
-client = ChatClient()
-category_and_product_response_1 = client.get_final_content(messages)
-print(category_and_product_response_1)
-
-# 2. load产品信息
-with open('./product-zh.json', 'r') as f:
-    products = json.load(f)
-
-# 3. 获取产品信息
-category_and_product_list = read_string_to_list(category_and_product_response_1)
-print(category_and_product_list)
-
-system_message = f"""
-您是一家大型电子商店的客服助理。
-请以友好和乐于助人的口吻回答问题，并尽量简洁明了。
-请确保向用户提出相关的后续问题。
-"""
-
-user_message_1 = f"""
-请告诉我关于 smartx pro phone 和 the fotosnap camera 的信息。
-另外，请告诉我关于你们的tvs的情况。
-"""
-
-messages =  [{'role':'system','content': system_message},
-             {'role':'user','content': user_message_1},
-             {'role':'assistant',
-              'content': f"""相关产品信息:\n\
-              {category_and_product_list}"""}]
-
-final_response = client.get_final_content(messages)
-print(final_response)
-
+if __name__ == '__main__':
+    user_message_1 = f"""
+         请告诉我关于 smartx pro phone 和 the fotosnap camera 的信息。
+         另外，请告诉我关于你们的tvs的情况。 """
+    messages = process_message(user_message_1)
+    client = ChatClient()
+    response = client.get_final_content(messages)
+    print(response)

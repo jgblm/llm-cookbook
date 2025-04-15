@@ -1,4 +1,6 @@
 import os
+
+from dotenv import find_dotenv
 from openai import OpenAI
 import dotenv
 
@@ -7,7 +9,8 @@ class ChatClient:
     client = None
 
     def __init__(self):
-        dotenv.load_dotenv("../../.env")
+        env_path = find_dotenv()
+        dotenv.load_dotenv(dotenv_path=env_path)
         self.client = OpenAI(
             # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
             api_key=os.getenv("DASHSCOPE_API_KEY"),

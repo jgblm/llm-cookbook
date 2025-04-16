@@ -177,14 +177,14 @@ def process_message(user_message):
                  'content': f"""相关产品信息:\n\
                   {product_information_for_user_message_1}"""}]
 
-    return messages;
+    return messages,product_information_for_user_message_1
 
 
 if __name__ == '__main__':
     user_message_1 = f"""
          请告诉我关于 smartx pro phone 和 the fotosnap camera 的信息。
          另外，请告诉我关于你们的tvs的情况。 """
-    messages = process_message(user_message_1)
+    messages,_ = process_message(user_message_1)
     client = ChatClient()
     response = client.get_final_content(messages)
     print(response)

@@ -11,7 +11,7 @@ def process_message_all(user_message):
         raise Exception("illegal input")
 
     # 处理用户信息
-    messages = prompt_chain.process_message(user_message)
+    messages,_ = prompt_chain.process_message(user_message)
     client = ChatClient()
     assistant_response = client.get_final_content(messages)
     messages.append({'role': 'assistant', 'content': assistant_response})

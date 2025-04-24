@@ -10,3 +10,9 @@ chatLLM = ChatOpenAI(
     model="qwen-plus-character",
     # other params...
 )
+jsonLLM = ChatOpenAI(
+    api_key=os.getenv("DASHSCOPE_API_KEY"),
+    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+    model="qwen-plus-character",
+    # other params...
+).bind(response_format={"type": "json_object"})

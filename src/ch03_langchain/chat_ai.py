@@ -1,5 +1,7 @@
 import os
+
 import dotenv
+from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_openai import ChatOpenAI
 
 env_path = dotenv.find_dotenv()
@@ -16,3 +18,8 @@ jsonLLM = ChatOpenAI(
     model="qwen-plus-character",
     # other params...
 ).bind(response_format={"type": "json_object"})
+
+embeddingLLM = DashScopeEmbeddings(
+    dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
+    model="text-embedding-v3",
+)
